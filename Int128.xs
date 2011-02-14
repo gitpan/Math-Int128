@@ -22,7 +22,8 @@ typedef unsigned __int128 uint128_t;
 #define SvI128Y(sv) (*((int128_t*)SvPVX(sv)))
 #define SVt_I128 SVt_PV
 
-SV *new_si128(pTHX) {
+static SV *
+new_si128(pTHX) {
     SV *si128 = newSV(I128LEN);
     SvPOK_on(si128);
     SvCUR_set(si128, I128LEN);
@@ -31,7 +32,7 @@ SV *new_si128(pTHX) {
 
 #define new_su128 new_si128
 
-int
+static int
 SvI128OK(pTHX_ SV *sv) {
     if (SvROK(sv)) {
         SV *si128 = SvRV(sv);
@@ -40,7 +41,7 @@ SvI128OK(pTHX_ SV *sv) {
     return 0;
 }
 
-int
+static int
 SvU128OK(pTHX_ SV *sv) {
     if (SvROK(sv)) {
         SV *su128 = SvRV(sv);
@@ -49,7 +50,7 @@ SvU128OK(pTHX_ SV *sv) {
     return 0;
 }
 
-SV *
+static SV *
 newSVi128(pTHX_ int128_t i128) {
     SV *sv;
     SV *si128 = new_si128(aTHX);
@@ -59,7 +60,7 @@ newSVi128(pTHX_ int128_t i128) {
     return sv;
 }
 
-SV *
+static SV *
 newSVu128(pTHX_ uint128_t u128) {
     SV *sv;
     SV *su128 = new_su128(aTHX);
@@ -72,7 +73,7 @@ newSVu128(pTHX_ uint128_t u128) {
 #define SvI128X(sv) (SvI128Y(SvRV(sv)))
 #define SvU128X(sv) (SvI128Y(SvRV(sv)))
 
-SV *
+static SV *
 SvSI128(pTHX_ SV *sv) {
     if (SvRV(sv)) {
         SV *si128 = SvRV(sv);
@@ -82,7 +83,7 @@ SvSI128(pTHX_ SV *sv) {
     Perl_croak(aTHX_ "internal error: reference to int128_t expected");
 }
 
-SV *
+static SV *
 SvSU128(pTHX_ SV *sv) {
     if (SvRV(sv)) {
         SV *su128 = SvRV(sv);
@@ -95,101 +96,131 @@ SvSU128(pTHX_ SV *sv) {
 #define SvI128x(sv) SvI128Y(SvSI128(aTHX_ sv))
 #define SvU128x(sv) SvI128Y(SvSU128(aTHX_ sv))
 
-uint128_t
-atoa128(pTHX_ const char *pv, STRLEN len, char *type) {
+static const U32 my_pow10[] = { 1,
+                                10,
+                                100,
+                                1000,
+                                10000,
+                                100000,
+                                1000000,
+                                10000000,
+                                100000000,
+                                1000000000 };
+
+static uint128_t
+atoui128(pTHX_ const char *pv, STRLEN len, char *type) {
     uint128_t u128 = 0;
     STRLEN i;
-    for (i = 0; i < len; i++) {
-        char c = pv[i];
-        if ((c >= '0') && (c <= '9')) {
-            u128 = u128 * 10 + (c - '0');
-        }
-        else break;
+
+    if (len == 0) {
+        if (ckWARN(WARN_NUMERIC))
+            Perl_warner(aTHX_ packWARN(WARN_NUMERIC),
+                        "Argument isn't numeric in conversion to %s", type);
+        return 0;
     }
-    if ((!len || (i < len)) && ckWARN(WARN_NUMERIC))
-        Perl_warner(aTHX_ packWARN(WARN_NUMERIC),
-                    "Argument isn't numeric in conversion to %s", type);
-    return u128;
+
+    while (1) {
+        U32 acu32 = 0;
+        for (i = 0; i < 9; i++) {
+            U32 c = *(pv++);
+            if ((c >= '0') && (c <= '9'))
+                acu32 = acu32 * 10 + (c - '0');
+            else {
+                if (ckWARN(WARN_NUMERIC) && (len != i))
+                    Perl_warner(aTHX_ packWARN(WARN_NUMERIC),
+                                "Argument isn't numeric in conversion to %s", type);
+                return u128 * my_pow10[i] + acu32;
+            }
+        }
+        u128 *= 1000000000;
+        u128 += acu32;
+        len -= 9;
+    }
 }
 
-int128_t
+#define skip_zeros for(;len > 1 && *pv == '0'; pv++, len--);
+
+static int128_t
 atou128(pTHX_ SV *sv) {
     STRLEN len;
     const char *pv = SvPV_const(sv, len);
+    if (len && (*pv == '+')) {
+        pv++; len--;
+    }
+    skip_zeros;
     if ((len >= 39) && (strncmp(pv, "340282366920938463463374607431768211456", len) >= 0))
         Perl_croak(aTHX_ "Integer overflow in conversion to uint128_t");
-    return atoa128(aTHX_ pv, len, "uint128_t");
+    return atoui128(aTHX_ pv, len, "uint128_t");
 }
 
-int128_t
+static int128_t
 atoi128(pTHX_ SV *sv) {
     STRLEN len;
     const char *pv = SvPV_const(sv, len);
-    if (len && (*pv == '-')) {
-        pv++; len--;
-        if (len >= 39) {
-            int cmp = strncmp(pv, "170141183460469231731687303715884105728", len);
-            if (cmp == 0)
-                return (((int128_t)1) << 127);
-            if (cmp > 0)
-                Perl_croak(aTHX_ "Integer overflow in conversion to int128_t");
+    if (len) {
+        if (*pv == '+') {
+            pv++; len--;
         }
-        return -atoa128(aTHX_ pv, len, "int128_t");
+        else if (*pv == '-') {
+            pv++; len--;
+            skip_zeros;
+            if (len >= 39) {
+                int cmp = strncmp(pv, "170141183460469231731687303715884105728", len);
+                if (cmp == 0)
+                    return (((int128_t)1) << 127);
+                if (cmp > 0)
+                    Perl_croak(aTHX_ "Integer overflow in conversion to int128_t");
+            }
+            return -atoui128(aTHX_ pv, len, "int128_t");
+        }
+        skip_zeros;
+        if ((len >= 39) && (strncmp(pv, "170141183460469231731687303715884105728", len) >= 0))
+            Perl_croak(aTHX_ "Integer overflow in conversion to int128_t");
     }
-    if ((len >= 39) && (strncmp(pv, "170141183460469231731687303715884105728", len) >= 0))
-        Perl_croak(aTHX_ "Integer overflow in conversion to int128_t");
-    return atoa128(aTHX_ pv, len, "int128_t");
+    return atoui128(aTHX_ pv, len, "int128_t");
 }
 
-int128_t
+static int128_t
 SvI128(pTHX_ SV *sv) {
-    if (!SvOK(sv)) {
-        return 0;
-    }
-    if (SvIOK_UV(sv)) {
-        return SvUV(sv);
-    }
-    if (SvIOK(sv)) {
-        return SvIV(sv);
-    }
-    if (SvNOK(sv)) {
-        return SvNV(sv);
-    }
     if (SvROK(sv)) {
         SV *si128 = SvRV(sv);
-        if (si128 && SvPOK(si128) && (SvCUR(si128) == I128LEN) &&
-            (sv_isa(sv, "Math::Int128") || sv_isa(sv, "Math::UInt128"))) {
+        if (SvPOK(si128) && (SvCUR(si128) == I128LEN) &&
+            (sv_isa(sv, "Math::Int128") || sv_isa(sv, "Math::UInt128")))
             return SvI128Y(si128);
+    }
+    else {
+        if (SvIOK(sv)) {
+            if (SvIOK_UV(sv))
+                return SvUV(sv);
+            return SvIV(sv);
+        }
+        if (SvNOK(sv)) {
+            return SvNV(sv);
         }
     }
     return atoi128(aTHX_ sv);
 }
 
-uint128_t
+static uint128_t
 SvU128(pTHX_ SV *sv) {
-    if (!SvOK(sv)) {
-        return 0;
-    }
-    if (SvIOK_UV(sv)) {
-        return SvUV(sv);
-    }
-    if (SvIOK(sv)) {
-        return SvIV(sv);
-    }
-    if (SvNOK(sv)) {
-        return SvNV(sv);
-    }
     if (SvROK(sv)) {
         SV *su128 = SvRV(sv);
-        if (su128 && SvPOK(su128) && (SvCUR(su128) == I128LEN) &&
-            (sv_isa(sv, "Math::Int128") || sv_isa(sv, "Math::UInt128"))) {
+        if (SvPOK(su128) && (SvCUR(su128) == I128LEN) &&
+            (sv_isa(sv, "Math::UInt128") || sv_isa(sv, "Math::Int128")))
             return SvI128Y(su128);
+    }
+    else {
+        if (SvIOK(sv)) {
+            if (SvIOK_UV(sv))
+                return SvUV(sv);
+            return SvIV(sv);
         }
+        if (SvNOK(sv)) return SvNV(sv);
     }
     return atou128(aTHX_ sv);
 }
 
-SV *
+static SV *
 si128_to_number(pTHX_ SV *sv) {
     int128_t i128 = SvI128(aTHX_ sv);
     if (i128 < 0) {
@@ -205,7 +236,7 @@ si128_to_number(pTHX_ SV *sv) {
     return newSVnv(i128);
 }
 
-SV *
+static SV *
 su128_to_number(pTHX_ SV *sv) {
     uint128_t u128 = SvU128(aTHX_ sv);
     UV uv;
@@ -217,7 +248,7 @@ su128_to_number(pTHX_ SV *sv) {
 
 #define I128STRLEN 44
 
-STRLEN
+static STRLEN
 u128_to_string(uint128_t u128, char *to) {
     char str[I128STRLEN];
     int i, len = 0;
@@ -235,7 +266,7 @@ u128_to_string(uint128_t u128, char *to) {
     }
 }
 
-STRLEN
+static STRLEN
 i128_to_string(int128_t i128, char *to) {
     if (i128 < 0) {
         *(to++) = '-';
@@ -244,6 +275,7 @@ i128_to_string(int128_t i128, char *to) {
     return u128_to_string(i128, to);
 }
 
+static void
 u128_to_hex(uint128_t i128, char *to) {
     int i = I128LEN * 2;
     while (i--) {
@@ -260,18 +292,18 @@ package_int128_stash = gv_stashsv(newSVpv("Math::Int128", 0), 1);
 package_uint128_stash = gv_stashsv(newSVpv("Math::UInt128", 0), 1);
 
 SV *
-miu128_int128(value=&PL_sv_undef)
+miu128_int128(value=0)
     SV *value;
 CODE:
-    RETVAL = newSVi128(aTHX_ SvI128(aTHX_ value));
+    RETVAL = newSVi128(aTHX_ (value ? SvI128(aTHX_ value) : 0));
 OUTPUT:
     RETVAL
 
 SV *
-miu128_uint128(value=&PL_sv_undef)
+miu128_uint128(value=0)
     SV *value;
 CODE:
-    RETVAL = newSVu128(aTHX_ SvU128(aTHX_ value));
+    RETVAL = newSVu128(aTHX_ (value ? SvU128(aTHX_ value) : 0));
 OUTPUT:
     RETVAL
 
@@ -451,6 +483,21 @@ miu128_uint128_to_hex(self)
 PREINIT:
     char *pv;
     uint128_t u128 = SvU128(aTHX_ self);
+CODE:
+    RETVAL = newSV(I128LEN * 2);
+    SvPOK_on(RETVAL);
+    SvCUR_set(RETVAL, I128LEN * 2);
+    pv = SvPVX(RETVAL);
+    u128_to_hex(u128, pv);
+OUTPUT:
+    RETVAL
+
+SV *
+miu128_int128_to_hex(self)
+    SV *self
+PREINIT:
+    char *pv;
+    uint128_t u128 = SvI128(aTHX_ self);
 CODE:
     RETVAL = newSV(I128LEN * 2);
     SvPOK_on(RETVAL);
@@ -1320,3 +1367,245 @@ CODE:
     SvCUR_set(RETVAL, u128_to_string(SvU128x(self), SvPVX(RETVAL)));
 OUTPUT:
     RETVAL
+
+
+MODULE = Math::Int128		PACKAGE = Math::Int128		PREFIX=mi128_
+PROTOTYPES: DISABLE
+
+void
+mi128_int128_set(self, a=NULL)
+    SV *self
+    SV *a
+CODE:
+    SvI128x(self) = (a ? SvI128(aTHX_ a) : 0);
+
+void
+mi128_int128_add(self, a, b)
+    SV *self
+    SV *a
+    SV *b
+CODE:
+    SvI128x(self) = SvI128(aTHX_ a) + SvI128(aTHX_ b);
+
+void
+mi128_int128_sub(self, a, b)
+    SV *self
+    SV *a
+    SV *b
+CODE:
+    SvI128x(self) = SvI128(aTHX_ a) - SvI128(aTHX_ b);
+
+void
+mi128_int128_mul(self, a, b)
+    SV *self
+    SV *a
+    SV *b
+CODE:
+    SvI128x(self) = SvI128(aTHX_ a) * SvI128(aTHX_ b);
+
+void
+mi128_int128_div(self, a, b)
+    SV *self
+    SV *a
+    SV *b
+CODE:
+    SvI128x(self) = SvI128(aTHX_ a) / SvI128(aTHX_ b);
+
+void
+mi128_int128_mod(self, a, b)
+    SV *self
+    SV *a
+    SV *b
+CODE:
+    SvI128x(self) = SvI128(aTHX_ a) % SvI128(aTHX_ b);
+
+void
+mi128_int128_divmod(self, rem, a, b)
+    SV *self
+    SV *rem
+    SV *a
+    SV *b
+PREINIT:
+    int128_t ai, bi, di, ri;
+CODE:
+    ai = SvI128(aTHX_ a);
+    bi = SvI128(aTHX_ b);
+    di = ai / bi;
+    ri = ai - bi * di;
+    SvI128x(self) = di;
+    SvI128x(rem) = ri;
+
+void
+mi128_int128_not(self, a)
+    SV *self
+    SV *a
+CODE:
+     SvI128x(self) = ~SvI128(aTHX_ a);
+
+void
+mi128_int128_neg(self, a)
+     SV *self
+     SV *a
+CODE:
+     SvI128x(self) = -SvI128(aTHX_ a);
+
+void
+mi128_int128_and(self, a, b)
+     SV *self
+     SV *a
+     SV *b
+CODE:
+     SvI128x(self) = SvI128(aTHX_ a) & SvI128(aTHX_ b);
+
+void
+mi128_int128_or(self, a, b)
+     SV *self
+     SV *a
+     SV *b
+CODE:
+     SvI128x(self) = SvI128(aTHX_ a) | SvI128(aTHX_ b);
+
+void
+mi128_int128_xor(self, a, b)
+     SV *self
+     SV *a
+     SV *b
+CODE:
+     SvI128x(self) = SvI128(aTHX_ a) ^ SvI128(aTHX_ b);
+
+void
+mi128_int128_left(self, a, b)
+     SV *self
+     SV *a
+     UV b
+CODE:
+     SvI128x(self) = SvI128(aTHX_ a) << b;
+
+void
+mi128_int128_right(self, a, b)
+     SV *self
+     SV *a
+     UV b
+CODE:
+     SvI128x(self) = SvI128(aTHX_ a) >> b;
+
+
+MODULE = Math::Int128		PACKAGE = Math::Int128		PREFIX=mu128_
+PROTOTYPES: DISABLE
+
+void
+mu128_uint128_set(self, a=NULL)
+    SV *self
+    SV *a
+CODE:
+    SvU128x(self) = (a ? SvU128(aTHX_ a) : 0);
+
+void
+mu128_uint128_add(self, a, b)
+    SV *self
+    SV *a
+    SV *b
+CODE:
+    SvU128x(self) = SvU128(aTHX_ a) + SvU128(aTHX_ b);
+
+void
+mu128_uint128_sub(self, a, b)
+    SV *self
+    SV *a
+    SV *b
+CODE:
+    SvU128x(self) = SvU128(aTHX_ a) - SvU128(aTHX_ b);
+
+void
+mu128_uint128_mul(self, a, b)
+    SV *self
+    SV *a
+    SV *b
+CODE:
+    SvU128x(self) = SvU128(aTHX_ a) * SvU128(aTHX_ b);
+
+void
+mu128_uint128_div(self, a, b)
+    SV *self
+    SV *a
+    SV *b
+CODE:
+    SvU128x(self) = SvU128(aTHX_ a) / SvU128(aTHX_ b);
+
+void
+mu128_uint128_mod(self, a, b)
+    SV *self
+    SV *a
+    SV *b
+CODE:
+    SvU128x(self) = SvU128(aTHX_ a) % SvU128(aTHX_ b);
+
+void
+mu128_uint128_divmod(self, rem, a, b)
+    SV *self
+    SV *rem
+    SV *a
+    SV *b
+PREINIT:
+    uint128_t ai, bi, di, ri;
+CODE:
+    ai = SvU128(aTHX_ a);
+    bi = SvU128(aTHX_ b);
+    di = ai / bi;
+    ri = ai - bi * di;
+    SvU128x(self) = di;
+    SvU128x(rem) = ri;
+
+void
+mu128_uint128_not(self, a)
+    SV *self
+    SV *a
+CODE:
+     SvU128x(self) = ~SvU128(aTHX_ a);
+
+void
+mu128_uint128_neg(self, a)
+     SV *self
+     SV *a
+CODE:
+     SvU128x(self) = -SvU128(aTHX_ a);
+
+void
+mu128_uint128_and(self, a, b)
+     SV *self
+     SV *a
+     SV *b
+CODE:
+     SvU128x(self) = SvU128(aTHX_ a) & SvU128(aTHX_ b);
+
+void
+mu128_uint128_or(self, a, b)
+     SV *self
+     SV *a
+     SV *b
+CODE:
+     SvU128x(self) = SvU128(aTHX_ a) | SvU128(aTHX_ b);
+
+void
+mu128_uint128_xor(self, a, b)
+     SV *self
+     SV *a
+     SV *b
+CODE:
+     SvU128x(self) = SvU128(aTHX_ a) ^ SvU128(aTHX_ b);
+
+void
+mu128_uint128_left(self, a, b)
+     SV *self
+     SV *a
+     UV b
+CODE:
+     SvU128x(self) = SvU128(aTHX_ a) << b;
+
+void
+mu128_uint128_right(self, a, b)
+     SV *self
+     SV *a
+     UV b
+CODE:
+     SvU128x(self) = SvU128(aTHX_ a) >> b;
