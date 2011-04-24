@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Math-Int128
-version:            0.04
+version:            0.05
 abstract:           ~
 author:
     - Salvador Fandino <sfandino@yahoo.com>
