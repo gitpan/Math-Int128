@@ -1,7 +1,7 @@
 --- #YAML:1.0
 name:               Math-Int128
-version:            0.05
-abstract:           ~
+version:            0.06_01
+abstract:           Manipulate 128 bits integers in Perl
 author:
     - Salvador Fandino <sfandino@yahoo.com>
 license:            unknown
@@ -15,7 +15,7 @@ no_index:
     directory:
         - t
         - inc
-generated_by:       ExtUtils::MakeMaker version 6.55_02
+generated_by:       ExtUtils::MakeMaker version 6.57_05
 meta-spec:
     url:      http://module-build.sourceforge.net/META-spec-v1.4.html
     version:  1.4

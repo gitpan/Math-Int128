@@ -1,22 +1,27 @@
+
 package Math::Int128;
 
 use strict;
 use warnings;
 
 BEGIN {
-    our $VERSION = '0.05';
+    our $VERSION = '0.06_01';
 
     require XSLoader;
     XSLoader::load('Math::Int128', $VERSION);
 }
 
-
+use constant MAX_INT128  => string_to_int128 ( '0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff');
+use constant MIN_INT128  => string_to_int128 ('-0x8000_0000_0000_0000_0000_0000_0000_0000');
+use constant MAX_UINT128 => string_to_uint128( '0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff');
 
 require Exporter;
 
 our @ISA = qw(Exporter);
 
-our %EXPORT_TAGS = ( ctors => [qw( int128 uint128 )],
+our %EXPORT_TAGS = ( ctors => [qw( int128 uint128
+                                   string_to_int128
+                                   string_to_uint128 )],
                      pack  => [qw( int128_to_number
                                    int128_to_hex
                                    net_to_int128
@@ -30,6 +35,8 @@ our %EXPORT_TAGS = ( ctors => [qw( int128 uint128 )],
                                    native_to_uint128
                                    uint128_to_native )],
                      op    => [qw( int128_set
+                                   int128_inc
+                                   int128_dec
                                    int128_add
                                    int128_sub
                                    int128_mul
@@ -43,7 +50,10 @@ our %EXPORT_TAGS = ( ctors => [qw( int128 uint128 )],
                                    int128_xor
                                    int128_left
                                    int128_right
+                                   int128_average
                                    uint128_set
+                                   uint128_inc
+                                   uint128_dec
                                    uint128_add
                                    uint128_sub
                                    uint128_mul
@@ -55,7 +65,11 @@ our %EXPORT_TAGS = ( ctors => [qw( int128 uint128 )],
                                    uint128_or
                                    uint128_xor
                                    uint128_left
-                                   uint128_right )] );
+                                   uint128_right
+                                   uint128_average)],
+                   limits  => [qw( MAX_INT128
+                                   MIN_INT128
+                                   MAX_UINT128 )] );
 
 our @EXPORT_OK = map @$_, values %EXPORT_TAGS;
 
@@ -128,6 +142,12 @@ use overload ( '+' => \&_add,
                fallback => 1 );
 
 
+
+
+sub as_int64 {
+    
+}
+
 1;
 
 __END__
@@ -150,12 +170,12 @@ Math::Int128 - Manipulate 128 bits integers in Perl
 This module adds support for 128 bit integers, signed and unsigned, to
 Perl.
 
-In order to compile this module GCC 4.4 or later is required.
+In order to compile this module, GCC 4.4 or later is required.
 
 =head1 API
 
 See L<Math::Int64>. This module provides a similar set of functions,
-just C<s/64/128/>.
+just C<s/64/128/g> ;-)
 
 Besides that, as object allocation and destruction has been found to
 be a bottleneck, an alternative set of operations that use their first
@@ -164,7 +184,7 @@ provided.
 
 They are...
 
-  int128_add, int128_sub mul int128_div int128_mod int128_divmod
+  int128_inc int128_dec int128_add int128_sub mul int128_div int128_mod int128_divmod
   int128_and int128_or int128_xor int128_left int128_right int128_not
   int128_neg
 
@@ -176,6 +196,7 @@ For instance:
   my $b = int128("-2849503498690387383748");
   my $ret = int128();
   int128_mul($ret, $a, $b);
+  int128_inc($ret, $ret); # $ret = $ret + 1
   int128_add($ret, $ret, "12826738463");
   say $ret;
 
@@ -185,13 +206,20 @@ C<int128_divmod> returns both the result of the division and the remainder:
   my $rem = int128();
   int128_divmod($ret, $rem, $a, $b);
 
+=head1 TODO
+
+Support more operations as log2, pow, etc.
+
 =head1 SEE ALSO
+
+L<Math::Int64>, L<Math::GMP>, L<Math::GMPn>.
 
 L<http://perlmonks.org/?node_id=886488>.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2007, 2009, 2011 by Salvador Fandino (sfandino@yahoo.com)
+Copyright (C) 2007, 2009, 2011, 2012 by Salvador Fandino
+(sfandino@yahoo.com)
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.10.1 or,
