@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Math-Int128
-version:            0.06_01
+version:            0.06_02
 abstract:           Manipulate 128 bits integers in Perl
 author:
     - Salvador Fandino <sfandino@yahoo.com>
