@@ -27,7 +27,7 @@ typedef unsigned __int128 uint128_t;
 #define INT128_MIN (~INT128_MAX)
 #define UINT128_MAX (~(int128_t)0)
 
-int may_die_on_overflow;
+static int may_die_on_overflow = 0;
 
 #if (PERL_VERSION >= 10)
 
@@ -57,23 +57,74 @@ overflow(pTHX_ char *msg) {
         Perl_croak(aTHX_ "Math::Int128 overflow: %s", msg);
 }
 
-static char *out_of_bounds_error_s = "number is out of bounds for int128_t conversion";
-static char *out_of_bounds_error_u = "number is out of bounds for uint128_t conversion";
-static char *mul_error             = "multiplication overflows";
-static char *add_error             = "addition overflows";
-static char *sub_error             = "subtraction overflows";
-static char *inc_error             = "increment operation wraps";
-static char *dec_error             = "decrement operation wraps";
-static char *left_b_error          = "left-shift right operand is out of bounds";
-static char *left_error            = "left shift overflows";
-static char *right_b_error         = "right-shift right operand is out of bounds";
-static char *right_error           = "right shift overflows";
+#define get_int128_stash_uncached() gv_stashpvs("Math::Int128", 1)
+#define get_uint128_stash_uncached() gv_stashpvs("Math::UInt128", 1)
+
+#ifdef MULTIPLICITY
+#  if defined(I_PTHREAD) && defined(PTHREAD_MUTEX_INITIALIZER)
+#    define CACHE_STASHES
+#  endif
+#else
+#  define CACHE_STASHES
+#endif
+
+#ifdef CACHE_STASHES
+static HV *int128_stash;
+static HV *uint128_stash;
+
+#  ifdef MULTIPLICITY
+static pthread_mutex_t stash_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int too_many_threads = 0;
+
+static void init_stash_cache(pTHX) {
+    pthread_mutex_lock(&stash_mutex);
+    if (too_many_threads) {
+        int128_stash = NULL;
+        uint128_stash = NULL;
+    }
+    else {
+        too_many_threads = 1;
+        int128_stash = get_int128_stash_uncached();
+        uint128_stash = get_uint128_stash_uncached();
+    }
+    pthread_mutex_unlock(&stash_mutex);
+}
+
+#  else
+
+static void init_stash_cache(pTHX) {
+    int128_stash = get_int128_stash_uncached();
+    uint128_stash = uget_int128_stash_uncached();
+}
+
+#  endif
+
+#define get_int128_stash() (int128_stash ? int128_stash : get_int128_stash_uncached())
+#define get_uint128_stash() (uint128_stash ? uint128_stash : get_uint128_stash_uncached())
+
+#else
+
+static void init_stash_cache(pTHX) { }
+
+#define get_int128_stash get_int128_stash_uncached
+#define get_uint128_stash get_uint128_stash_uncached
+
+#endif
+
+static char *out_of_bounds_error_s = "Number is out of bounds for int128_t conversion";
+static char *out_of_bounds_error_u = "Number is out of bounds for uint128_t conversion";
+static char *mul_error             = "Multiplication overflows";
+static char *add_error             = "Addition overflows";
+static char *sub_error             = "Subtraction overflows";
+static char *inc_error             = "Increment operation wraps";
+static char *dec_error             = "Decrement operation wraps";
+static char *left_b_error          = "Left-shift right operand is out of bounds";
+static char *left_error            = "Left shift overflows";
+static char *right_b_error         = "Right-shift right operand is out of bounds";
+static char *right_error           = "Right shift overflows";
 static char *division_by_zero      = "Illegal division by zero";
 
 #include <strtoint128.h>
-
-static HV *package_int128_stash;
-static HV *package_uint128_stash;
 
 #define SvI128Y(sv) (*((int128_t*)SvPVX(sv)))
 #define SvU128Y(sv) (*((uint128_t*)SvPVX(sv)))
@@ -91,7 +142,7 @@ new_si128(pTHX) {
 
 static SV *
 newSVi128(pTHX_ int128_t i128) {
-    HV *stash = (package_int128_stash ? package_int128_stash : gv_stashpvs("Math::Int128", 1));
+    HV *stash = get_int128_stash();
     SV *si128 = new_si128(aTHX);
     SV *sv;
     SvI128Y(si128) = i128;
@@ -102,13 +153,31 @@ newSVi128(pTHX_ int128_t i128) {
 
 static SV *
 newSVu128(pTHX_ uint128_t u128) {
-    HV *stash = (package_uint128_stash ? package_uint128_stash : gv_stashpvs("Math::UInt128", 1));
+    HV *stash = get_uint128_stash();
     SV *su128 = new_su128(aTHX);
     SV *sv;
     SvI128Y(su128) = u128;
     sv = newRV_noinc(su128);
     sv_bless(sv, stash);
     return sv;
+}
+
+static int
+SvI128OK(pTHX_ SV *sv) {
+    if (SvROK(sv)) {
+        SV *si128 = SvRV(sv);
+        return (si128 && (SvTYPE(si128) >= SVt_I128) && sv_isa(sv, "Math::Int128"));
+    }
+    return 0;
+}
+
+static int
+SvU128OK(pTHX_ SV *sv) {
+    if (SvROK(sv)) {
+        SV *su128 = SvRV(sv);
+        return (su128 && (SvTYPE(su128) >= SVt_I128) && sv_isa(sv, "Math::UInt128"));
+    }
+    return 0;
 }
 
 #define SvI128X(sv) (SvI128Y(SvRV(sv)))
@@ -143,19 +212,23 @@ SvI128(pTHX_ SV *sv) {
         SV *si128 = SvRV(sv);
         if (si128 && SvOBJECT(si128)) {
             HV *stash = SvSTASH(si128);
-            if (stash == package_int128_stash) {
+#ifdef CACHE_STASHES
+            if (stash == int128_stash) {
                 return SvI128Y(si128);
             }
-            else if (stash == package_uint128_stash) {
+            else if (stash == uint128_stash) {
                 int128_t u128 = SvU128Y(si128);
                 if (may_die_on_overflow && (u128 > INT128_MAX))
                     overflow(aTHX_ out_of_bounds_error_s);
                 return u128;
             }
+#else
+            if (0);
+#endif
             else {
                 GV *method;
                 char const * classname = HvNAME_get(stash);
-                if (strncmp(classname, "Math::", 6) == 0) {
+                if (memcmp(classname, "Math::", 6) == 0) {
                     int u;
                     if (classname[6] == 'U') {
                         classname += 7;
@@ -165,9 +238,9 @@ SvI128(pTHX_ SV *sv) {
                         classname += 6;
                         u = 0;
                     }
-                    if (strncmp(classname, "Int", 3) == 0) {
+                    if (memcmp(classname, "Int", 3) == 0) {
                         classname += 3;
-                        if (strcmp(classname, "128") == 0) {
+                        if (memcmp(classname, "128", 4) == 0) {
                             if (!SvPOK(si128) || (SvCUR(si128) != I128LEN))
                                 Perl_croak(aTHX_ "Wrong internal representation for %s object", HvNAME_get(stash));
                             if (u) {
@@ -178,7 +251,7 @@ SvI128(pTHX_ SV *sv) {
                             }
                             return SvI128Y(si128);
                         }
-                        if (strcmp(classname, "64") == 0) {
+                        if (memcmp(classname, "64", 3) == 0) {
                             if (u) {
                                 return SvU64(sv);
                             }
@@ -235,18 +308,22 @@ SvU128(pTHX_ SV *sv) {
         SV *su128 = SvRV(sv);
         if (su128 && SvOBJECT(su128)) {
             HV *stash = SvSTASH(su128);
-            if (stash == package_uint128_stash)
+#ifdef CACHE_STASHES
+            if (stash == uint128_stash)
                 return SvU128Y(su128);
-            else if (stash == package_int128_stash) {
+            else if (stash == int128_stash) {
                 int128_t i128 = SvI128Y(su128);
                 if (may_die_on_overflow && (i128 < 0))
                     overflow(aTHX_ out_of_bounds_error_u);
                 return i128;
             }
+#else
+            if (0);
+#endif
             else {
                 GV *method;
                 char const * classname = HvNAME_get(stash);
-                if (strncmp(classname, "Math::", 6) == 0) {
+                if (memcmp(classname, "Math::", 6) == 0) {
                     int u;
                     if (classname[6] == 'U') {
                         classname += 7;
@@ -256,9 +333,9 @@ SvU128(pTHX_ SV *sv) {
                         classname += 6;
                         u = 0;
                     }
-                    if (strncmp(classname, "Int", 3) == 0) {
+                    if (memcmp(classname, "Int", 3) == 0) {
                         classname += 3;
-                        if (strcmp(classname, "128") == 0) {
+                        if (memcmp(classname, "128", 4) == 0) {
                             if (!SvPOK(su128) || (SvCUR(su128) != I128LEN))
                                 Perl_croak(aTHX_ "Wrong internal representation for %s object", HvNAME_get(stash));
                             if (u)
@@ -269,7 +346,7 @@ SvU128(pTHX_ SV *sv) {
                                 return i128;
                             }
                         }
-                        if (strcmp(classname, "64") == 0) {
+                        if (memcmp(classname, "64", 3) == 0) {
                             if (u) {
                                 return SvU64(sv);
                             }
@@ -392,19 +469,19 @@ u128_to_hex(uint128_t i128, char *to) {
     }
 }
 
+#include "c_api.h"
+
 MODULE = Math::Int128		PACKAGE = Math::Int128			PREFIX=miu128_	
 
 BOOT:
-    may_die_on_overflow = 0;
-    package_int128_stash = gv_stashpvs("Math::Int128", 1);
-    package_uint128_stash = gv_stashpvs("Math::UInt128", 1);
-    MATH_INT64_BOOT;
+    init_stash_cache(aTHX);
+    PERL_MATH_INT64_LOAD_OR_CROAK;
+    INIT_C_API;
 
 void
 CLONE()
 CODE:
-    package_int128_stash = 0;
-    package_uint128_stash = 0;
+    init_stash_cache(aTHX);
 
 void
 miu128__set_may_die_on_overflow(v)
