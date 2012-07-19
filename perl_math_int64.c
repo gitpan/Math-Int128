@@ -2,8 +2,9 @@
  * perl_math_int64.c - This file is in the public domain
  * Author: Salvador Fandino <sfandino@yahoo.com>
  *
- * Generated on: 2012-07-17 11:15:33
+ * Generated on: 2012-07-19 08:32:51
  * Math::Int64 version: 2
+ * Module::CAPIMaker version: 0.02
  */
 
 #include "EXTERN.h"
@@ -44,14 +45,16 @@ perl_math_int64_load(int required_version) {
 
    math_int64_c_api_hash = get_hv("Math::Int64::C_API", 0);
     if (!math_int64_c_api_hash) {
-        sv_setpv_mg(ERRSV, "Unable to load Math::Int64 C API");
+        sv_setpv(ERRSV, "Unable to load Math::Int64 C API");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
 
     svp = hv_fetch(math_int64_c_api_hash, "min_version", 11, 0);
     if (!svp) svp = hv_fetch(math_int64_c_api_hash, "version", 7, 1);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to retrieve C API version for Math::Int64");
+        sv_setpv(ERRSV, "Unable to retrieve C API version for Math::Int64");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int64_c_api_min_version = SvIV(*svp);
@@ -59,61 +62,70 @@ perl_math_int64_load(int required_version) {
     svp = hv_fetch(math_int64_c_api_hash, "max_version", 11, 0);
     if (!svp) svp = hv_fetch(math_int64_c_api_hash, "version", 7, 1);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to retrieve C API version for Math::Int64");
+        sv_setpv(ERRSV, "Unable to retrieve C API version for Math::Int64");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int64_c_api_max_version = SvIV(*svp);
 
     if ((required_version < math_int64_c_api_min_version) ||
         (required_version > math_int64_c_api_max_version)) {
-        sv_setpvf_mg(ERRSV,
-                     "Math::Int64 C API version mismatch. "
-                     "The installed module supports versions %d to %d but %d is required",
-                     math_int64_c_api_min_version,
-                     math_int64_c_api_max_version,
-                     required_version);
+        sv_setpvf(ERRSV,
+                  "Math::Int64 C API version mismatch. "
+                  "The installed module supports versions %d to %d but %d is required",
+                  math_int64_c_api_min_version,
+                  math_int64_c_api_max_version,
+                  required_version);
+        SvSETMAGIC(ERRSV);
         return 0;
     }
 
     svp = hv_fetch(math_int64_c_api_hash, "SvI64", 5, 0);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to fetch pointer 'SvI64' C function from Math::Int64");
+        sv_setpv(ERRSV, "Unable to fetch pointer 'SvI64' C function from Math::Int64");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int64_c_api_SvI64 = INT2PTR(void *, SvIV(*svp));
     svp = hv_fetch(math_int64_c_api_hash, "SvI64OK", 7, 0);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to fetch pointer 'SvI64OK' C function from Math::Int64");
+        sv_setpv(ERRSV, "Unable to fetch pointer 'SvI64OK' C function from Math::Int64");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int64_c_api_SvI64OK = INT2PTR(void *, SvIV(*svp));
     svp = hv_fetch(math_int64_c_api_hash, "SvU64", 5, 0);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to fetch pointer 'SvU64' C function from Math::Int64");
+        sv_setpv(ERRSV, "Unable to fetch pointer 'SvU64' C function from Math::Int64");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int64_c_api_SvU64 = INT2PTR(void *, SvIV(*svp));
     svp = hv_fetch(math_int64_c_api_hash, "SvU64OK", 7, 0);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to fetch pointer 'SvU64OK' C function from Math::Int64");
+        sv_setpv(ERRSV, "Unable to fetch pointer 'SvU64OK' C function from Math::Int64");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int64_c_api_SvU64OK = INT2PTR(void *, SvIV(*svp));
     svp = hv_fetch(math_int64_c_api_hash, "newSVi64", 8, 0);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to fetch pointer 'newSVi64' C function from Math::Int64");
+        sv_setpv(ERRSV, "Unable to fetch pointer 'newSVi64' C function from Math::Int64");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int64_c_api_newSVi64 = INT2PTR(void *, SvIV(*svp));
     svp = hv_fetch(math_int64_c_api_hash, "newSVu64", 8, 0);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to fetch pointer 'newSVu64' C function from Math::Int64");
+        sv_setpv(ERRSV, "Unable to fetch pointer 'newSVu64' C function from Math::Int64");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int64_c_api_newSVu64 = INT2PTR(void *, SvIV(*svp));
     svp = hv_fetch(math_int64_c_api_hash, "randU64", 7, 0);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to fetch pointer 'randU64' C function from Math::Int64");
+        sv_setpv(ERRSV, "Unable to fetch pointer 'randU64' C function from Math::Int64");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int64_c_api_randU64 = INT2PTR(void *, SvIV(*svp));

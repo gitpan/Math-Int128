@@ -3,9 +3,9 @@
  * Author: Salvador Fandino <sfandino@yahoo.com>
  * Version: 2.0
  *
- * Generated on: 2012-07-17 11:15:33
+ * Generated on: 2012-07-19 08:32:51
  * Math::Int64 version: 2
- *
+ * Module::CAPIMaker version: 0.02
  */
 
 #if !defined (PERL_MATH_INT64_H_INCLUDED)

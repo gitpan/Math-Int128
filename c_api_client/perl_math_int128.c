@@ -2,8 +2,9 @@
  * perl_math_int128.c - This file is in the public domain
  * Author: Salvador Fandino <sfandino@yahoo.com>
  *
- * Generated on: 2012-07-17 12:34:17
- * Math::Int128 version: 0.06_03
+ * Generated on: 2012-07-19 08:52:49
+ * Math::Int128 version: 0.06_05
+ * Module::CAPIMaker version: 0.02
  */
 
 #include "EXTERN.h"
@@ -47,7 +48,8 @@ perl_math_int128_load(int required_version) {
 
     math_int128_c_api_hash = get_hv("Math::Int128::C_API", 0);
     if (!math_int128_c_api_hash) {
-        sv_setpv_mg(ERRSV, "Unable to load Math::Int128 C API");
+        sv_setpv(ERRSV, "Unable to load Math::Int128 C API");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
 
@@ -55,48 +57,55 @@ perl_math_int128_load(int required_version) {
     math_int128_c_api_max_version = SvIV(*hv_fetch(math_int128_c_api_hash, "max_version", 11, 1));
     if ((required_version < math_int128_c_api_min_version) ||
         (required_version > math_int128_c_api_max_version)) {
-        sv_setpvf_mg(ERRSV, 
-                     "Math::Int128 C API version mismatch. "
-                     "The installed module supports versions %d to %d but %d is required",
-                     math_int128_c_api_min_version,
-                     math_int128_c_api_max_version,
-                     required_version);
+        sv_setpvf(ERRSV, 
+                  "Math::Int128 C API version mismatch. "
+                  "The installed module supports versions %d to %d but %d is required",
+                  math_int128_c_api_min_version,
+                  math_int128_c_api_max_version,
+                  required_version);
+        SvSETMAGIC(ERRSV);
         return 0;
     }
 
     svp = hv_fetch(math_int128_c_api_hash, "SvI128", 6, 0);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to fetch pointer 'SvI128' C function from Math::Int128");
+        sv_setpv(ERRSV, "Unable to fetch pointer 'SvI128' C function from Math::Int128");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int128_c_api_SvI128 = INT2PTR(void *, SvIV(*svp));
     svp = hv_fetch(math_int128_c_api_hash, "SvI128OK", 8, 0);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to fetch pointer 'SvI128OK' C function from Math::Int128");
+        sv_setpv(ERRSV, "Unable to fetch pointer 'SvI128OK' C function from Math::Int128");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int128_c_api_SvI128OK = INT2PTR(void *, SvIV(*svp));
     svp = hv_fetch(math_int128_c_api_hash, "SvU128", 6, 0);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to fetch pointer 'SvU128' C function from Math::Int128");
+        sv_setpv(ERRSV, "Unable to fetch pointer 'SvU128' C function from Math::Int128");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int128_c_api_SvU128 = INT2PTR(void *, SvIV(*svp));
     svp = hv_fetch(math_int128_c_api_hash, "SvU128OK", 8, 0);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to fetch pointer 'SvU128OK' C function from Math::Int128");
+        sv_setpv(ERRSV, "Unable to fetch pointer 'SvU128OK' C function from Math::Int128");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int128_c_api_SvU128OK = INT2PTR(void *, SvIV(*svp));
     svp = hv_fetch(math_int128_c_api_hash, "newSVi128", 9, 0);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to fetch pointer 'newSVi128' C function from Math::Int128");
+        sv_setpv(ERRSV, "Unable to fetch pointer 'newSVi128' C function from Math::Int128");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int128_c_api_newSVi128 = INT2PTR(void *, SvIV(*svp));
     svp = hv_fetch(math_int128_c_api_hash, "newSVu128", 9, 0);
     if (!svp || !*svp) {
-        sv_setpv_mg(ERRSV, "Unable to fetch pointer 'newSVu128' C function from Math::Int128");
+        sv_setpv(ERRSV, "Unable to fetch pointer 'newSVu128' C function from Math::Int128");
+        SvSETMAGIC(ERRSV);
         return 0;
     }
     math_int128_c_api_newSVu128 = INT2PTR(void *, SvIV(*svp));
@@ -108,7 +117,9 @@ perl_math_int128_load(int required_version) {
 
 int
 perl_math_int128_load(int required_version) {
-    sv_setpv_mg(ERRSV, "Unable to load Math::Int128 C API: your compiler does not support 128bit integers");
+    dTHX;
+    sv_setpv(ERRSV, "Unable to load Math::Int128 C API: your compiler does not support 128bit integers");
+    SvSETMAGIC(ERRSV);
     return 0;
 }
 
