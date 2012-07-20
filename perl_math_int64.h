@@ -3,15 +3,15 @@
  * Author: Salvador Fandino <sfandino@yahoo.com>
  * Version: 2.0
  *
- * Generated on: 2012-07-19 08:32:51
- * Math::Int64 version: 2
+ * Generated on: 2012-07-20 08:05:23
+ * Math::Int64 version: 0.27_04
  * Module::CAPIMaker version: 0.02
  */
 
 #if !defined (PERL_MATH_INT64_H_INCLUDED)
 #define PERL_MATH_INT64_H_INCLUDED
 
-#define MATH_INT64_C_API_REQUIRED_VERSION 1
+#define MATH_INT64_C_API_REQUIRED_VERSION 2
 #define MATH_INT64_VERSION MATH_INT64_C_API_REQUIRED_VERSION
 
 int perl_math_int64_load(int required_version);

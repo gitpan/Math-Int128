@@ -2,8 +2,8 @@
  * sample.xs - This file is in the public domain
  * Author: Salvador Fandino <sfandino@yahoo.com>
  *
- * Generated on: 2012-07-19 08:52:49
- * Math::Int128 version: 0.06_05
+ * Generated on: 2012-07-20 08:08:21
+ * Math::Int128 version: 0.06_06
  */
 
 #include "EXTERN.h"
