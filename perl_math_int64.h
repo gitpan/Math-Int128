@@ -3,8 +3,8 @@
  * Author: Salvador Fandino <sfandino@yahoo.com>
  * Version: 2.0
  *
- * Generated on: 2012-09-03 13:11:15
- * Math::Int64 version: 0.27_04
+ * Generated on: 2012-12-10 21:34:09
+ * Math::Int64 version: 0.28
  * Module::CAPIMaker version: 0.02
  */
 
