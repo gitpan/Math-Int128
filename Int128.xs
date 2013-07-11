@@ -6,6 +6,8 @@
 #include "perl.h"
 #include "XSUB.h"
 #include "ppport.h"
+
+#include <stdint.h>
 #include "perl_math_int64.h"
 
 #if __GNUC__ == 4 && __GNUC_MINOR__ >= 4 && __GNUC_MINOR__ < 6
@@ -183,7 +185,7 @@ SvU128OK(pTHX_ SV *sv) {
 }
 
 #define SvI128X(sv) (SvI128Y(SvRV(sv)))
-#define SvU128X(sv) (SvI128Y(SvRV(sv)))
+#define SvU128X(sv) (SvU128Y(SvRV(sv)))
 
 static SV *
 SvSI128(pTHX_ SV *sv) {
@@ -729,10 +731,8 @@ MODULE = Math::Int128		PACKAGE = Math::Int128		PREFIX=mi128
 PROTOTYPES: DISABLE
 
 SV *
-mi128_inc(self, other, rev)
+mi128_inc(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 PREINIT:
     int128_t i128 = SvI128x(self);
 CODE:
@@ -744,10 +744,8 @@ OUTPUT:
     RETVAL
 
 SV *
-mi128_dec(self, other, rev)
+mi128_dec(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 PREINIT:
     int128_t i128 = SvI128x(self);
 CODE:
@@ -922,24 +920,23 @@ SV *mi128_left(self, other, rev)
     SV *self
     SV *other
     SV *rev
-PREINIT:
-    int128_t a;
-    uint128_t b;
 CODE:
-    if (SvTRUE(rev)) {
-        a = SvI128(aTHX_ other);
-        b = SvU128x(self);
+    if (SvOK(rev)) {
+        uint128_t a, b;
+        if (SvTRUE(rev)) {
+            a = SvU128(aTHX_ other);
+            b = SvU128x(self);
+        }
+        else {
+            b = SvU128(aTHX_ other);
+            a = SvI128x(self);
+        }
+        RETVAL = newSVi128(aTHX_ (uint128_t)(b > 127 ? 0 : a << b));
     }
     else {
-        b = SvI128(aTHX_ other);
-        a = SvU128x(self);
-    }
-    if (may_die_on_overflow && (b > 128)) overflow(aTHX_ left_error);
-    if (SvOK(rev))
-        RETVAL = newSVi128(aTHX_ (b > 128 ? 0 : (a << b)));
-    else {
+        uint128_t b = SvU128(aTHX_ other);
         RETVAL = SvREFCNT_inc(self);
-        SvI128x(self) = (b > 128 ? 0 : (a << b));
+        SvI128x(self) <<= (b > 128 ? 128 : b);
     }
 OUTPUT:
     RETVAL
@@ -951,22 +948,23 @@ SV *mi128_right(self, other, rev)
 PREINIT:
     int128_t a;
     uint128_t b;
-    int128_t r;
 CODE:
-    if (SvTRUE(rev)) {
-        a = SvI128(aTHX_ other);
-        b = SvU128x(self);
+    if (SvOK(rev)) {
+        if (SvTRUE(rev)) {
+            a = SvI128(aTHX_ other);
+            b = SvU128x(self);
+        }
+        else {
+            b = SvU128(aTHX_ other);
+            a = SvI128x(self);
+        }
+        RETVAL = newSVi128(aTHX_ a >> (b > 127 ? 127 : b));
     }
     else {
-        b = SvU128(aTHX_ other);
         a = SvI128x(self);
-    }
-    r = (b > 127 ? (a < 0 ? -1 : 0) : a >> b);
-    if (SvOK(rev))
-        RETVAL = newSVi128(aTHX_ r);
-    else {
+        b = SvU128(aTHX_ other);
         RETVAL = SvREFCNT_inc(self);
-        SvI128x(self) = r;
+        SvI128x(self) >>= (b > 127 ? 127 : b);
     }
 OUTPUT:
     RETVAL
@@ -993,10 +991,9 @@ OUTPUT:
     RETVAL
 
 SV *
-mi128_eqn(self, other, rev)
+mi128_eqn(self, other, ...)
     SV *self
     SV *other
-    SV *rev = NO_INIT
 CODE:
     RETVAL = ( SvI128x(self) == SvI128(aTHX_ other)
                ? &PL_sv_yes
@@ -1005,10 +1002,9 @@ OUTPUT:
     RETVAL
 
 SV *
-mi128_nen(self, other, rev)
+mi128_nen(self, other, ...)
     SV *self
     SV *other
-    SV *rev = NO_INIT
 CODE:
     RETVAL = ( SvI128x(self) != SvI128(aTHX_ other)
                ? &PL_sv_yes
@@ -1117,70 +1113,56 @@ OUTPUT:
     RETVAL
 
 SV *
-mi128_not(self, other, rev)
+mi128_not(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 CODE:
     RETVAL = SvI128x(self) ? &PL_sv_no : &PL_sv_yes;
 OUTPUT:
     RETVAL
 
 SV *
-mi128_bnot(self, other, rev)
+mi128_bnot(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 CODE:
     RETVAL = newSVi128(aTHX_ ~SvI128x(self));
 OUTPUT:
     RETVAL    
 
 SV *
-mi128_neg(self, other, rev)
+mi128_neg(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 CODE:
     RETVAL = newSVi128(aTHX_ -SvI128x(self));
 OUTPUT:
     RETVAL
 
 SV *
-mi128_bool(self, other, rev)
+mi128_bool(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 CODE:
     RETVAL = SvI128x(self) ? &PL_sv_yes : &PL_sv_no;
 OUTPUT:
     RETVAL
 
 SV *
-mi128_number(self, other, rev)
+mi128_number(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 CODE:
     RETVAL = si128_to_number(aTHX_ self);
 OUTPUT:
     RETVAL
 
 SV *
-mi128_clone(self, other, rev)
+mi128_clone(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 CODE:
     RETVAL = newSVi128(aTHX_ SvI128x(self));
 OUTPUT:
     RETVAL
 
 SV *
-mi128_string(self, other, rev)
+mi128_string(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 PREINIT:
     STRLEN len;
 CODE:
@@ -1195,10 +1177,8 @@ MODULE = Math::Int128		PACKAGE = Math::UInt128		PREFIX=mu128
 PROTOTYPES: DISABLE
 
 SV *
-mu128_inc(self, other, rev)
+mu128_inc(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 CODE:
     if (may_die_on_overflow && (SvU128x(self) == UINT128_MAX)) overflow(aTHX_ inc_error);
     SvU128x(self)++;
@@ -1207,10 +1187,8 @@ OUTPUT:
     RETVAL
 
 SV *
-mu128_dec(self, other, rev)
+mu128_dec(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 CODE:
     if (may_die_on_overflow && (SvU128x(self) == 0)) overflow(aTHX_ dec_error);
     SvU128x(self)--;
@@ -1365,23 +1343,23 @@ SV *mu128_left(self, other, rev)
     SV *self
     SV *other
     SV *rev
-PREINIT:
-    uint128_t a, b;
 CODE:
-    if (SvTRUE(rev)) {
-        a = SvU128(aTHX_ other);
-        b = SvU128x(self);
+    if (SvOK(rev)) {
+        uint128_t a, b;
+        if (SvTRUE(rev)) {
+            a = SvU128(aTHX_ other);
+            b = SvU128x(self);
+        }
+        else {
+            b = SvU128(aTHX_ other);
+            a = SvU128x(self);
+        }
+        RETVAL = newSVu128(aTHX_ (b > 128 ? 0 : a << b));
     }
     else {
-        b = SvU128(aTHX_ other);
-        a = SvU128x(self);
-    }
-    if ( may_die_on_overflow && (b > 128) ) overflow(aTHX_ left_b_error);
-    if (SvOK(rev))
-        RETVAL = newSVu128(aTHX_ a << b);
-    else {
+        uint128_t b = SvU128(aTHX_ other);
         RETVAL = SvREFCNT_inc(self);
-        SvU128x(self) = (a >> b);
+        SvU128x(self) <<= (b > 128 ? 128 : b);
     }
 OUTPUT:
     RETVAL
@@ -1390,23 +1368,23 @@ SV *mu128_right(self, other, rev)
     SV *self
     SV *other
     SV *rev
-PREINIT:
-    uint128_t a, b;
 CODE:
-    if (SvTRUE(rev)) {
-        a = SvU128(aTHX_ other);
-        b = SvU128x(self);
+    if (SvOK(rev)) {
+        uint128_t a, b;
+        if (SvTRUE(rev)) {
+            a = SvU128(aTHX_ other);
+            b = SvU128x(self);
+        }
+        else {
+            b = SvU128(aTHX_ other);
+            a = SvU128x(self);
+        }
+        RETVAL = newSVu128(aTHX_ (b > 128 ? 0 : a >> b));
     }
     else {
-        b = SvU128(aTHX_ other);
-        a = SvU128x(self);
-    }
-    if ( may_die_on_overflow && (b > 128) ) overflow(aTHX_ right_b_error);
-    if (SvOK(rev))
-        RETVAL = newSVu128(aTHX_ a >> b);
-    else {
+        uint128_t b = SvU128(aTHX_ other);
         RETVAL = SvREFCNT_inc(self);
-        SvU128x(self) = (a >> b);
+        SvU128x(self) >>= (b > 128 ? 128 : b);
     }
 OUTPUT:
     RETVAL
@@ -1433,10 +1411,9 @@ OUTPUT:
     RETVAL
 
 SV *
-mu128_eqn(self, other, rev)
+mu128_eqn(self, other, ...)
     SV *self
     SV *other
-    SV *rev = NO_INIT
 CODE:
     RETVAL = ( SvU128x(self) == SvU128(aTHX_ other)
                ? &PL_sv_yes
@@ -1445,10 +1422,9 @@ OUTPUT:
     RETVAL
 
 SV *
-mu128_nen(self, other, rev)
+mu128_nen(self, other, ...)
     SV *self
     SV *other
-    SV *rev = NO_INIT
 CODE:
     RETVAL = ( SvU128x(self) != SvU128(aTHX_ other)
                ? &PL_sv_yes
@@ -1557,70 +1533,56 @@ OUTPUT:
     RETVAL
 
 SV *
-mu128_not(self, other, rev)
+mu128_not(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 CODE:
     RETVAL = SvU128x(self) ? &PL_sv_no : &PL_sv_yes;
 OUTPUT:
     RETVAL
 
 SV *
-mu128_bnot(self, other, rev)
+mu128_bnot(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 CODE:
     RETVAL = newSVu128(aTHX_ ~SvU128x(self));
 OUTPUT:
     RETVAL    
 
 SV *
-mu128_neg(self, other, rev)
+mu128_neg(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 CODE:
     RETVAL = newSVu128(aTHX_ -SvU128x(self));
 OUTPUT:
     RETVAL
 
 SV *
-mu128_bool(self, other, rev)
+mu128_bool(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 CODE:
     RETVAL = SvU128x(self) ? &PL_sv_yes : &PL_sv_no;
 OUTPUT:
     RETVAL
 
 SV *
-mu128_number(self, other, rev)
+mu128_number(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 CODE:
     RETVAL = su128_to_number(aTHX_ self);
 OUTPUT:
     RETVAL
 
 SV *
-mu128_clone(self, other, rev)
+mu128_clone(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 CODE:
     RETVAL = newSVu128(aTHX_ SvU128x(self));
 OUTPUT:
     RETVAL
 
 SV *
-mu128_string(self, other, rev)
+mu128_string(self, ...)
     SV *self
-    SV *other = NO_INIT
-    SV *rev = NO_INIT
 PREINIT:
     STRLEN len;
 CODE:

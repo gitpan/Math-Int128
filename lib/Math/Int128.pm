@@ -1,11 +1,10 @@
-
 package Math::Int128;
 
 use strict;
 use warnings;
 
 BEGIN {
-    our $VERSION = '0.07';
+    our $VERSION = '0.09';
 
     require XSLoader;
     XSLoader::load('Math::Int128', $VERSION);
@@ -176,7 +175,7 @@ be a bottleneck, an alternative set of operations that use their first
 argument as the output (instead of the return value) is also
 provided.
 
-They are...
+They are as follows:
 
   int128_inc int128_dec int128_add int128_sub mul int128_div int128_mod int128_divmod
   int128_and int128_or int128_xor int128_left int128_right int128_not
@@ -241,7 +240,7 @@ L<http://perlmonks.org/?node_id=886488>.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2007, 2009, 2011, 2012 by Salvador Fandino
+Copyright (C) 2007, 2009, 2011-2013 by Salvador FandiE<ntilde>o
 (sfandino@yahoo.com)
 
 This library is free software; you can redistribute it and/or modify
