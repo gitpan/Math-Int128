@@ -4,6 +4,7 @@ author:
   - 'Salvador Fandino <sfandino@yahoo.com>'
 build_requires:
   ExtUtils::MakeMaker: 0
+  Test::More: 0.88
 configure_requires:
   ExtUtils::MakeMaker: 0
 dynamic_config: 1
@@ -19,4 +20,6 @@ no_index:
     - inc
 requires:
   Math::Int64: 0.27_04
-version: 0.10
+resources:
+  repository: https://github.com/salva/p5-Math-Int128
+version: 0.11

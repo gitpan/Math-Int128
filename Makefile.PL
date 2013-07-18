@@ -2,16 +2,32 @@ use ExtUtils::MakeMaker;
 
 use Config;
 
+my %deps = ('Math::Int64' => '0.27_04');
+
+unless (-f "c_api.h") {
+    $deps{'Module::CAPIMaker'} = '0.01';
+}
+
+unless (-f "perl_math_int64.c" and -f "perl_math_int64.h") {
+    warn "perl_math_int64.c or perl_math_int64.h files are not found, Math::Int64 has to be cloned under the same root directory as Math::Int128\n";
+}
+
 my $mm = WriteMakefile(NAME          => 'Math::Int128',
                        VERSION_FROM  => 'lib/Math/Int128.pm',
                        ABSTRACT_FROM => 'lib/Math/Int128.pm',
                        AUTHOR        => 'Salvador Fandino <sfandino@yahoo.com>',
-                       PREREQ_PM     => { 'Math::Int64' => '0.27_04' },
+                       PREREQ_PM     => \%deps,
+                       TEST_REQUIRES => { 'Test::More' => '0.88' },
                        LIBS          => [''],
                        DEFINE        => '',
                        INC           => '-I.',
                        # OPTIMIZE    => '-g -O0',
                        OBJECT        => '$(O_FILES)',
+                       META_MERGE    => {
+                           resources => {
+                               repository  =>  'https://github.com/salva/p5-Math-Int128',
+                           },
+                      },
                       );
 
 my $cc = (grep defined, $mm->{CC}, $Config{cc}, 'cc')[0];
