@@ -33,7 +33,7 @@
       },
       "runtime" : {
          "requires" : {
-            "Math::Int64" : "0.27_04"
+            "Math::Int64" : "0.34"
          }
       }
    },
@@ -43,5 +43,5 @@
          "url" : "https://github.com/salva/p5-Math-Int128"
       }
    },
-   "version" : "0.14"
+   "version" : "0.15"
 }
