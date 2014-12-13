@@ -1,9 +1,9 @@
 /*
  * perl_math_int128.c - This file is in the public domain
- * Author: Salvador Fandino <sfandino@yahoo.com>
+ * Author: "Salvador FandiÃ±o <sfandino@yahoo.com>, Dave Rolsky <autarch@urth.org>"
  *
- * Generated on: 2014-10-30 17:20:17
- * Math::Int128 version: 0.15
+ * Generated on: 2014-12-13 12:54:52
+ * Math::Int128 version: 0.16_03
  */
 
 #include "EXTERN.h"
