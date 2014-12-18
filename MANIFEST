@@ -16,7 +16,6 @@ c_api_client/perl_math_int128.c
 c_api_client/perl_math_int128.h
 c_api_client/sample.xs
 c_api_client/typemap
-config.log
 cpanfile
 dist.ini
 inc/Capture/Tiny.pm
