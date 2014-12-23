@@ -1,5 +1,5 @@
 package Math::Int128;
-# git description: v0.16_04-9-gba49cd4
+# git description: v0.16_05-3-gf213d57
 
 
 use strict;
@@ -8,7 +8,7 @@ use warnings;
 # The "our $VERSION" bit needs to be at the beginning of the line for the
 # benefit of the RewriteVersion plugin.
 BEGIN {
-our $VERSION = '0.16_05';
+our $VERSION = '0.17';
 require XSLoader;
 XSLoader::load('Math::Int128', $VERSION);
 }
@@ -116,7 +116,7 @@ use overload ( '+' => \&_add,
                fallback => 1 );
 
 package Math::UInt128;
-# git description: v0.16_04-9-gba49cd4
+# git description: v0.16_05-3-gf213d57
 
 use overload ( '+' => \&_add,
                '+=' => \&_add,
