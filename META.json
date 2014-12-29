@@ -62,18 +62,18 @@
    "provides" : {
       "Math::Int128" : {
          "file" : "lib/Math/Int128.pm",
-         "version" : "0.17"
+         "version" : "0.17_01"
       },
       "Math::Int128::die_on_overflow" : {
          "file" : "lib/Math/Int128/die_on_overflow.pm",
-         "version" : "0.17"
+         "version" : "0.17_01"
       },
       "Math::UInt128" : {
          "file" : "lib/Math/Int128.pm",
-         "version" : "0.17"
+         "version" : "0.17_01"
       }
    },
-   "release_status" : "stable",
+   "release_status" : "testing",
    "resources" : {
       "bugtracker" : {
          "mailto" : "bug-math-int128@rt.cpan.org",
@@ -86,7 +86,7 @@
          "web" : "https://github.com/salva/p5-Math-Int128"
       }
    },
-   "version" : "0.17",
+   "version" : "0.17_01",
    "x_Dist_Zilla" : {
       "perl" : {
          "version" : "5.016003"
@@ -173,7 +173,7 @@
                }
             },
             "name" : "@DROLSKY/MetaProvides::Package",
-            "version" : "2.001002"
+            "version" : "2.002000"
          },
          {
             "class" : "Dist::Zilla::Plugin::NextRelease",
@@ -329,7 +329,7 @@
          {
             "class" : "Dist::Zilla::Plugin::Git::Describe",
             "name" : "@DROLSKY/Git::Describe",
-            "version" : "0.003"
+            "version" : "0.004"
          },
          {
             "class" : "Dist::Zilla::Plugin::InstallGuide",
@@ -480,7 +480,7 @@
                "Dist::Zilla::Plugin::Git::Tag" : {
                   "branch" : null,
                   "signed" : 0,
-                  "tag" : "v0.17",
+                  "tag" : "v0.17_01",
                   "tag_format" : "v%v",
                   "tag_message" : "v%v",
                   "time_zone" : "local"

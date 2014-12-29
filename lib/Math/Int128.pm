@@ -1,5 +1,5 @@
 package Math::Int128;
-# git description: v0.16_05-3-gf213d57
+# git description: v0.17-10-g1d66f8f
 
 
 use strict;
@@ -8,7 +8,7 @@ use warnings;
 # The "our $VERSION" bit needs to be at the beginning of the line for the
 # benefit of the RewriteVersion plugin.
 BEGIN {
-our $VERSION = '0.17';
+our $VERSION = '0.17_01';
 require XSLoader;
 XSLoader::load('Math::Int128', $VERSION);
 }
@@ -116,7 +116,7 @@ use overload ( '+' => \&_add,
                fallback => 1 );
 
 package Math::UInt128;
-# git description: v0.16_05-3-gf213d57
+# git description: v0.17-10-g1d66f8f
 
 use overload ( '+' => \&_add,
                '+=' => \&_add,
@@ -177,7 +177,21 @@ Math::Int128 - Manipulate 128 bits integers in Perl
 This module adds support for 128 bit integers, signed and unsigned, to
 Perl.
 
-In order to compile this module, GCC 4.4 or later is required.
+In order to compile this module, your compiler must support one of either the
+C<__int128> or C<int __attribute__ ((__mode__ (TI)))> types. Both GCC and
+Clang support have support one or the other type for some time, but may only
+do so on 64-bit platforms.
+
+=head2 OSX Caveat
+
+On OSX, the system Perl is compiled with both the "-arch x86_64" and "-arch
+i386" flags. We strip the "-arch i386" bit before building this module,
+meaning it is only compiled for the 64-bit architecture. Attempting to use
+this module while running in 32-bit mode may lead to brokenness. It's also
+possible that this will cause other problems that we cannot foresee.
+
+Note that if you compile this module against a non-multiarch Perl you build
+yourself then this will not be an issue.
 
 =head1 API
 
