@@ -62,15 +62,15 @@
    "provides" : {
       "Math::Int128" : {
          "file" : "lib/Math/Int128.pm",
-         "version" : "0.17_01"
+         "version" : "0.17_02"
       },
       "Math::Int128::die_on_overflow" : {
          "file" : "lib/Math/Int128/die_on_overflow.pm",
-         "version" : "0.17_01"
+         "version" : "0.17_02"
       },
       "Math::UInt128" : {
          "file" : "lib/Math/Int128.pm",
-         "version" : "0.17_01"
+         "version" : "0.17_02"
       }
    },
    "release_status" : "testing",
@@ -86,7 +86,7 @@
          "web" : "https://github.com/salva/p5-Math-Int128"
       }
    },
-   "version" : "0.17_01",
+   "version" : "0.17_02",
    "x_Dist_Zilla" : {
       "perl" : {
          "version" : "5.016003"
@@ -480,7 +480,7 @@
                "Dist::Zilla::Plugin::Git::Tag" : {
                   "branch" : null,
                   "signed" : 0,
-                  "tag" : "v0.17_01",
+                  "tag" : "v0.17_02",
                   "tag_format" : "v%v",
                   "tag_message" : "v%v",
                   "time_zone" : "local"
