@@ -1,5 +1,8 @@
 Revision history for Perl extension Math::Int128.
 
+0.18     2015-01-05
+      - No changes from last release.
+
 0.17_02  2014-12-30
       - Reverted the probe change in the last version. This wasn't necessary
         and it brought back the old failure of clang on FreeBSD i386 claiming

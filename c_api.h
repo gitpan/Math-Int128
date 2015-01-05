@@ -3,8 +3,8 @@
  * c_api.h - This file is in the public domain
  * Author: "Salvador FandiÃ±o <sfandino@yahoo.com>, Dave Rolsky <autarch@urth.org>"
  *
- * Generated on: 2014-12-30 09:34:48
- * Math::Int128 version: 0.17_02
+ * Generated on: 2015-01-05 09:05:46
+ * Math::Int128 version: 0.18
  */
 
 #if !defined (C_API_H_INCLUDED)
